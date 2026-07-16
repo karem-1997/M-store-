@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام إدارة المخزن</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #fff; overflow-x: hidden; }
+        .container { max-width: 480px; margin: 0 auto; padding: 15px; min-height: 100vh; }
+        .page { display: none; animation: fadeIn 0.4s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); }
+        .card-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #00d4ff; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 14px; color: #aaa; }
+        .form-group input, .form-group select { width: 100%; padding: 12px 15px; border: none; border-radius: 10px; background: rgba(255,255,255,0.1); color: #fff; font-size: 16px; outline: none; }
+        .form-group input:focus, .form-group select:focus { background: rgba(255,255,255,0.15); box-shadow: 0 0 0 2px #00d4ff; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; margin-bottom: 10px; }
+        .btn-primary { background: linear-gradient(135deg, #00d4ff, #0099cc); color: #fff; }
+        .btn-success { background: linear-gradient(135deg, #00ff88, #00cc66); color: #fff; }
+        .btn-danger { background: linear-gradient(135deg, #ff4757, #cc0033); color: #fff; }
+        .btn-info { background: linear-gradient(135deg, #74b9ff, #0984e3); color: #fff; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-small { padding: 8px 12px; font-size: 13px; width: auto; display: inline-block; margin: 2px; }
+        .logo { text-align: center; padding: 30px 0; }
+        .logo h1 { font-size: 32px; background: linear-gradient(135deg, #00d4ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+        .logo p { color: #888; font-size: 14px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .stat-box { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.08); }
+        .stat-box .number { font-size: 28px; font-weight: bold; color: #00d4ff; }
+        .stat-box .label { font-size: 12px; color: #888; margin-top: 5px; }
+        .item-list { max-height: 400px; overflow-y: auto; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); }
+        .item-name { font-weight: bold; font-size: 15px; }
+        .item-qty { background: #00d4ff; color: #000; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .item-qty.low { background: #ff4757; color: #fff; }
+        .search-box { position: relative; margin-bottom: 15px; }
+        .search-box input { width: 100%; padding: 12px 15px 12px 45px; border: none; border-radius: 10px; background: rgba(255,255,255,0.1); color: #fff; font-size: 15px; outline: none; }
+        .search-box::before { content: "🔍"; position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+        .nav-bar { display: flex; justify-content: space-around; background: rgba(0,0,0,0.3); padding: 10px 0; position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; backdrop-filter: blur(10px); }
+        .nav-item { text-align: center; color: #888; font-size: 11px; cursor: pointer; padding: 5px 10px; }
+        .nav-item.active { color: #00d4ff; }
+        .nav-item .icon { font-size: 22px; display: block; margin-bottom: 2px; }
+        .hidden { display: none !important; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 16px; padding: 25px; width: 100%; max-width: 400px; border: 1px solid rgba(255,255,255,0.1); }
+        .transaction-row { padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 6px; font-size: 13px; border-right: 3px solid #00d4ff; }
+        .transaction-row.out { border-right-color: #ff4757; }
+        .transaction-row.in { border-right-color: #00ff88; }
+        .transaction-date { color: #888; font-size: 11px; }
+        .transaction-user { color: #00d4ff; font-weight: bold; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
+        .tab { padding: 8px 16px; background: rgba(255,255,255,0.05); border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); }
+        .tab.active { background: #00d4ff; color: #000; font-weight: bold; }
+        .empty-state { text-align: center; padding: 40px 20px; color: #666; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #00ff88; color: #000; padding: 12px 25px; border-radius: 10px; font-weight: bold; z-index: 2000; transition: all 0.3s; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.error { background: #ff4757; color: #fff; }
+        .qty-input-group { display: flex; align-items: center; gap: 10px; }
+        .qty-input-group button { width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.1); color: #fff; font-size: 18px; cursor: pointer; }
+        .qty-input-group input { width: 80px; text-align: center; padding: 8px; border: none; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; font-size: 16px; }
+        .config-section { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px dashed rgba(0,212,255,0.3); }
+        .config-section h3 { color: #00d4ff; font-size: 14px; margin-bottom: 10px; }
+        .link-input { font-size: 12px !important; direction: ltr; text-align: left; }
+        .debug-info { background: rgba(255,200,0,0.1); border: 1px solid rgba(255,200,0,0.3); border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 12px; color: #ffcc00; }
+        .connection-status { text-align: center; padding: 10px; font-size: 12px; margin-bottom: 10px; border-radius: 8px; }
+        .connection-status.ok { background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
+        .connection-status.error { background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.3); }
+        .connection-status.warn { background: rgba(255,200,0,0.1); color: #ffcc00; border: 1px solid rgba(255,200,0,0.3); }
+        /* ===== CSS جديد للموظفين ===== */
+        .employee-card { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); }
+        .employee-name { font-weight: bold; font-size: 15px; color: #fff; }
+        .employee-user { color: #888; font-size: 12px; margin-top: 3px; }
+        .section-title { font-size: 16px; font-weight: bold; color: #00d4ff; margin: 15px 0 10px 0; }
+        .date-range { display: flex; gap: 10px; margin-bottom: 10px; }
+        .date-range input { flex: 1; padding: 10px; border: none; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="toast" id="toast"></div>
+
+    <!-- Login Page -->
+    <div class="page active" id="loginPage">
+        <div class="container">
+            <div class="logo">
+                <h1>نظام إدارة المخزن</h1>
+                <p>تسجيل دخول الموظفين</p>
+            </div>
+            <div class="card">
+                <div class="connection-status" id="connStatus" style="display:none;"></div>
+                <div class="form-group">
+                    <label>اسم المستخدم</label>
+                    <input type="text" id="loginUsername" placeholder="أدخل اسم المستخدم">
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور</label>
+                    <input type="password" id="loginPassword" placeholder="أدخل كلمة المرور">
+                </div>
+                <button class="btn btn-primary" id="btnLogin">تسجيل الدخول</button>
+                <button class="btn btn-secondary" id="btnAdminLogin">لوحة المدير</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal-overlay" id="adminLoginModal">
+        <div class="modal-content">
+            <div class="card-title">تسجيل دخول المدير</div>
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <input type="password" id="adminPassword" placeholder="أدخل كلمة مرور المدير">
+            </div>
+            <button class="btn btn-primary" id="btnAdminSubmit">دخول</button>
+            <button class="btn btn-secondary" id="btnAdminCancel">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- Employee Dashboard -->
+    <div class="page" id="employeePage">
+        <div class="container" style="padding-bottom: 80px;">
+            <div class="logo">
+                <h1>لوحة الموظف</h1>
+                <p id="employeeName">مرحبا</p>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-box"><div class="number" id="totalItems">0</div><div class="label">إجمالي الأصناف</div></div>
+                <div class="stat-box"><div class="number" id="totalQty">0</div><div class="label">إجمالي الكمية</div></div>
+            </div>
+            <div class="tabs">
+                <div class="tab active" data-emptab="inventory">المخزون</div>
+                <div class="tab" data-emptab="add">إضافة</div>
+                <div class="tab" data-emptab="remove">خروج</div>
+            </div>
+            <div id="empTab-inventory">
+                <div class="search-box"><input type="text" id="searchInventory" placeholder="بحث عن صنف..."></div>
+                <div class="item-list" id="inventoryList"></div>
+            </div>
+            <div id="empTab-add" class="hidden">
+                <div class="card">
+                    <div class="card-title">إضافة صنف جديد</div>
+                    <div class="form-group"><label>اسم الصنف</label><input type="text" id="newItemName" placeholder="اسم الصنف"></div>
+                    <div class="form-group"><label>الكمية</label><div class="qty-input-group"><button class="qty-minus" data-target="newItemQty">-</button><input type="number" id="newItemQty" value="1" min="1"><button class="qty-plus" data-target="newItemQty">+</button></div></div>
+                    <button class="btn btn-success" id="btnAddNewItem">إضافة الصنف</button>
+                </div>
+                <div class="card">
+                    <div class="card-title">إضافة لصنف موجود</div>
+                    <div class="form-group"><label>اختر الصنف</label><select id="existingItemSelect"></select></div>
+                    <div class="form-group"><label>الكمية المضافة</label><div class="qty-input-group"><button class="qty-minus" data-target="addQty">-</button><input type="number" id="addQty" value="1" min="1"><button class="qty-plus" data-target="addQty">+</button></div></div>
+                    <button class="btn btn-success" id="btnAddExisting">إضافة الكمية</button>
+                </div>
+            </div>
+            <div id="empTab-remove" class="hidden">
+                <div class="card">
+                    <div class="card-title">خروج صنف من المخزن</div>
+                    <div class="form-group"><label>اختر الصنف</label><select id="removeItemSelect"></select></div>
+                    <div class="form-group"><label>الكمية المراد خروجها</label><div class="qty-input-group"><button class="qty-minus" data-target="removeQty">-</button><input type="number" id="removeQty" value="1" min="1"><button class="qty-plus" data-target="removeQty">+</button></div></div>
+                    <div class="form-group"><label>ملاحظات (اختياري)</label><input type="text" id="removeNotes" placeholder="ملاحظات عن الخروج"></div>
+                    <button class="btn btn-danger" id="btnRemoveItem">تسجيل الخروج</button>
+                </div>
+            </div>
+        </div>
+        <div class="nav-bar">
+            <div class="nav-item active" data-empnav="inventory"><span class="icon">📦</span><span>المخزون</span></div>
+            <div class="nav-item" data-empnav="add"><span class="icon">➕</span><span>إضافة</span></div>
+            <div class="nav-item" data-empnav="remove"><span class="icon">➖</span><span>خروج</span></div>
+            <div class="nav-item" data-empnav="logout"><span class="icon">🚪</span><span>خروج</span></div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="page" id="adminPage">
+        <div class="container" style="padding-bottom: 80px;">
+            <div class="logo"><h1>لوحة المدير</h1><p>التحكم الكامل في النظام</p></div>
+            <div class="stats-grid">
+                <div class="stat-box"><div class="number" id="adminTotalItems">0</div><div class="label">الأصناف</div></div>
+                <div class="stat-box"><div class="number" id="adminTotalQty">0</div><div class="label">الكمية</div></div>
+                <div class="stat-box"><div class="number" id="adminTotalIn">0</div><div class="label">الوارد</div></div>
+                <div class="stat-box"><div class="number" id="adminTotalOut">0</div><div class="label">الصادر</div></div>
+            </div>
+            <div class="tabs" id="adminMainTabs">
+                <div class="tab active" data-admintab="inventory">المخزون</div>
+                <div class="tab" data-admintab="employees">الموظفين</div>
+                <div class="tab" data-admintab="transactions">الحركات</div>
+                <div class="tab" data-admintab="reports">التقارير</div>
+            </div>
+            <div id="adminTab-inventory">
+                <div class="search-box"><input type="text" id="adminSearch" placeholder="بحث عن صنف..."></div>
+                <div class="item-list" id="adminInventoryList"></div>
+            </div>
+            <div id="adminTab-employees" class="hidden">
+                <div class="card">
+                    <div class="card-title">إضافة موظف جديد</div>
+                    <div class="connection-status" id="empConnStatus" style="display:none;"></div>
+                    <div class="form-group"><label>اسم الموظف</label><input type="text" id="empName" placeholder="اسم الموظف الكامل"></div>
+                    <div class="form-group"><label>اسم المستخدم</label><input type="text" id="empUsername" placeholder="اسم المستخدم للدخول"></div>
+                    <div class="form-group"><label>كلمة المرور</label><input type="password" id="empPassword" placeholder="كلمة المرور"></div>
+                    <button class="btn btn-success" id="btnAddEmployee">إضافة موظف</button>
+                    <div class="debug-info" id="empDebug" style="display:none;"></div>
+                </div>
+                <div class="section-title">الموظفين المسجلين</div>
+                <div id="employeesList"></div>
+            </div>
+            <div id="adminTab-transactions" class="hidden">
+                <div class="card">
+                    <div class="card-title">سجل الحركات</div>
+                    <div class="tabs" id="transFilterTabs">
+                        <div class="tab active" data-transfilter="all">الكل</div>
+                        <div class="tab" data-transfilter="in">وارد</div>
+                        <div class="tab" data-transfilter="out">صادر</div>
+                    </div>
+                    <div id="transactionsList"></div>
+                </div>
+            </div>
+            <div id="adminTab-reports" class="hidden">
+                <div class="config-section">
+                    <h3>⚙️ رابط Google Sheets</h3>
+                    <p>ضع هنا رابط Web App من Google Apps Script</p>
+                    <div class="form-group"><input type="text" id="sheetsUrl" class="link-input" placeholder="https://script.google.com/macros/s/.../exec" value=""></div>
+                    <button class="btn btn-info" id="btnSaveSheetsUrl">حفظ الرابط</button>
+                </div>
+                <div class="card"><div class="card-title">تقرير المخزون الحالي</div><button class="btn btn-success" id="btnExportInventory">تحميل تقرير المخزون</button></div>
+                <div class="card"><div class="card-title">تقرير الوارد</div><div class="date-range"><input type="date" id="inFromDate"><input type="date" id="inToDate"></div><button class="btn btn-info" id="btnExportIn">تحميل تقرير الوارد</button></div>
+                <div class="card"><div class="card-title">تقرير الصادر</div><div class="date-range"><input type="date" id="outFromDate"><input type="date" id="outToDate"></div><button class="btn btn-danger" id="btnExportOut">تحميل تقرير الصادر</button></div>
+                <div class="card"><div class="card-title">تقرير شامل</div><div class="date-range"><input type="date" id="fullFromDate"><input type="date" id="fullToDate"></div><button class="btn btn-primary" id="btnExportFull">تحميل التقرير الشامل</button></div>
+            </div>
+        </div>
+        <div class="nav-bar">
+            <div class="nav-item active" data-adminnav="inventory"><span class="icon">📦</span><span>المخزون</span></div>
+            <div class="nav-item" data-adminnav="employees"><span class="icon">👥</span><span>الموظفين</span></div>
+            <div class="nav-item" data-adminnav="transactions"><span class="icon">📋</span><span>الحركات</span></div>
+            <div class="nav-item" data-adminnav="reports"><span class="icon">📊</span><span>تقارير</span></div>
+            <div class="nav-item" data-adminnav="logout"><span class="icon">🚪</span><span>خروج</span></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // FIREBASE CONFIG
+        // ============================================
+        var firebaseConfig = {
+            apiKey: "AIzaSyA-6H0YDUutiL6X74M264_TOa5p-BNLfbs",
+            authDomain: "m-store-d408a.firebaseapp.com",
+            projectId: "m-store-d408a",
+            storageBucket: "m-store-d408a.firebasestorage.app",
+            messagingSenderId: "622740319036",
+            appId: "1:622740319036:web:b62c4ef042065b6e390c39",
+            measurementId: "G-B042GZNCYB",
+            databaseURL: "https://m-store-d408a-default-rtdb.firebaseio.com"
+        };
+
+        var db = null;
+        var firebaseConnected = false;
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            console.log("Firebase initialized successfully");
+        } catch (e) {
+            console.error("Firebase init error:", e);
+            showConnStatus("خطأ في تهيئة Firebase: " + e.message, false);
+        }
+
+        // ============================================
+        // GLOBAL STATE
+        // ============================================
+        var currentUser = null;
+        var inventory = {};
+        var employees = {};
+        var transactions = [];
+        var transactionFilter = 'all';
+        var sheetsUrl = localStorage.getItem('sheetsUrl') || '';
+
+        // ============================================
+        // LOCAL STORAGE FALLBACK
+        // ============================================
+        function saveToLocalStorage() {
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            localStorage.setItem('employees', JSON.stringify(employees));
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                var inv = localStorage.getItem('inventory');
+                var emp = localStorage.getItem('employees');
+                var trans = localStorage.getItem('transactions');
+                if (inv) inventory = JSON.parse(inv);
+                if (emp) employees = JSON.parse(emp);
+                if (trans) {
+                    transactions = JSON.parse(trans);
+                    transactions.sort(function(a, b) { return b.timestamp - a.timestamp; });
+                }
+                updateInventoryDisplay();
+                updateAdminStats();
+                updateSelects();
+                updateEmployeesList();
+                updateTransactionsList();
+                console.log('Loaded from localStorage');
+            } catch (e) {
+                console.error('localStorage load error:', e);
+            }
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            if (sheetsUrl) document.getElementById('sheetsUrl').value = sheetsUrl;
+            setDefaultDates();
+            attachAllEvents();
+
+            // Load localStorage first as fallback
+            loadFromLocalStorage();
+
+            // Then try Firebase
+            if (db) {
+                testFirebaseConnection();
+            } else {
+                showConnStatus("يعمل في الوضع المحلي (بدون Firebase)", "warn");
+            }
+        });
+
+        function testFirebaseConnection() {
+            var statusDiv = document.getElementById('connStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'connection-status';
+            statusDiv.textContent = 'جاري اختبار الاتصال بـ Firebase...';
+
+            var testRef = db.ref('.info/connected');
+            testRef.on('value', function(snap) {
+                if (snap.val() === true) {
+                    firebaseConnected = true;
+                    statusDiv.className = 'connection-status ok';
+                    statusDiv.textContent = 'متصل بـ Firebase';
+                    loadData();
+                    setTimeout(function() { statusDiv.style.display = 'none'; }, 2000);
+                } else {
+                    statusDiv.className = 'connection-status error';
+                    statusDiv.textContent = 'غير متصل بـ Firebase - تأكد من Rules';
+                }
+            });
+        }
+
+        function showConnStatus(msg, type) {
+            var statusDiv = document.getElementById('connStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'connection-status';
+            if (type === true || type === 'ok') statusDiv.classList.add('ok');
+            else if (type === false || type === 'error') statusDiv.classList.add('error');
+            else if (type === 'warn') statusDiv.classList.add('warn');
+            statusDiv.textContent = msg;
+        }
+
+        function setDefaultDates() {
+            var today = new Date().toISOString().split('T')[0];
+            var lastMonth = new Date();
+            lastMonth.setMonth(lastMonth.getMonth() - 1);
+            var lastMonthStr = lastMonth.toISOString().split('T')[0];
+            document.getElementById('inFromDate').value = lastMonthStr;
+            document.getElementById('inToDate').value = today;
+            document.getElementById('outFromDate').value = lastMonthStr;
+            document.getElementById('outToDate').value = today;
+            document.getElementById('fullFromDate').value = lastMonthStr;
+            document.getElementById('fullToDate').value = today;
+        }
+
+        function attachAllEvents() {
+            document.getElementById('btnLogin').addEventListener('click', login);
+            document.getElementById('btnAdminLogin').addEventListener('click', showAdminLogin);
+            document.getElementById('btnAdminSubmit').addEventListener('click', adminLogin);
+            document.getElementById('btnAdminCancel').addEventListener('click', function() { closeModal('adminLoginModal'); });
+
+            var empTabs = document.querySelectorAll('[data-emptab]');
+            for (var i = 0; i < empTabs.length; i++) {
+                empTabs[i].addEventListener('click', function() { switchEmpTab(this.getAttribute('data-emptab')); });
+            }
+
+            var empNavs = document.querySelectorAll('[data-empnav]');
+            for (var i = 0; i < empNavs.length; i++) {
+                empNavs[i].addEventListener('click', function() {
+                    var nav = this.getAttribute('data-empnav');
+                    if (nav === 'logout') logout(); else switchEmpTab(nav);
+                });
+            }
+
+            var adminTabs = document.querySelectorAll('#adminMainTabs [data-admintab]');
+            for (var i = 0; i < adminTabs.length; i++) {
+                adminTabs[i].addEventListener('click', function() { switchAdminTab(this.getAttribute('data-admintab')); });
+            }
+
+            var adminNavs = document.querySelectorAll('[data-adminnav]');
+            for (var i = 0; i < adminNavs.length; i++) {
+                adminNavs[i].addEventListener('click', function() {
+                    var nav = this.getAttribute('data-adminnav');
+                    if (nav === 'logout') logout(); else switchAdminTab(nav);
+                });
+            }
+
+            var transTabs = document.querySelectorAll('#transFilterTabs [data-transfilter]');
+            for (var i = 0; i < transTabs.length; i++) {
+                transTabs[i].addEventListener('click', function() { filterTransactions(this.getAttribute('data-transfilter')); });
+            }
+
+            var qtyMinus = document.querySelectorAll('.qty-minus');
+            for (var i = 0; i < qtyMinus.length; i++) {
+                qtyMinus[i].addEventListener('click', function() { changeQty(this.getAttribute('data-target'), -1); });
+            }
+            var qtyPlus = document.querySelectorAll('.qty-plus');
+            for (var i = 0; i < qtyPlus.length; i++) {
+                qtyPlus[i].addEventListener('click', function() { changeQty(this.getAttribute('data-target'), 1); });
+            }
+
+            document.getElementById('btnAddNewItem').addEventListener('click', addNewItem);
+            document.getElementById('btnAddExisting').addEventListener('click', addToExisting);
+            document.getElementById('btnRemoveItem').addEventListener('click', removeItem);
+            document.getElementById('btnAddEmployee').addEventListener('click', addEmployee);
+            document.getElementById('btnSaveSheetsUrl').addEventListener('click', saveSheetsUrl);
+            document.getElementById('btnExportInventory').addEventListener('click', exportInventoryReport);
+            document.getElementById('btnExportIn').addEventListener('click', exportInReport);
+            document.getElementById('btnExportOut').addEventListener('click', exportOutReport);
+            document.getElementById('btnExportFull').addEventListener('click', exportFullReport);
+
+            document.getElementById('searchInventory').addEventListener('input', searchItems);
+            document.getElementById('adminSearch').addEventListener('input', adminSearchItems);
+
+            document.getElementById('adminLoginModal').addEventListener('click', function(e) {
+                if (e.target === this) closeModal('adminLoginModal');
+            });
+        }
+
+        // ============================================
+        // DATA LOADING
+        // ============================================
+        function loadData() {
+            if (!db) return;
+
+            db.ref('inventory').on('value', function(snapshot) {
+                inventory = snapshot.val() || {};
+                updateInventoryDisplay();
+                updateAdminStats();
+                updateSelects();
+                saveToLocalStorage();
+            }, function(error) {
+                console.error('Inventory error:', error);
+            });
+
+            db.ref('employees').on('value', function(snapshot) {
+                employees = snapshot.val() || {};
+                updateEmployeesList();
+                saveToLocalStorage();
+            }, function(error) {
+                console.error('Employees error:', error);
+            });
+
+            db.ref('transactions').on('value', function(snapshot) {
+                var val = snapshot.val() || {};
+                transactions = [];
+                for (var key in val) {
+                    if (val.hasOwnProperty(key)) transactions.push(val[key]);
+                }
+                transactions.sort(function(a, b) { return b.timestamp - a.timestamp; });
+                updateTransactionsList();
+                updateAdminStats();
+                saveToLocalStorage();
+            }, function(error) {
+                console.error('Transactions error:', error);
+            });
+        }
+
+        // ============================================
+        // UI UPDATES
+        // ============================================
+        function updateInventoryDisplay() {
+            var list = document.getElementById('inventoryList');
+            var search = document.getElementById('searchInventory').value.toLowerCase();
+            var html = '';
+            var totalItems = 0;
+            var totalQty = 0;
+
+            for (var name in inventory) {
+                if (inventory.hasOwnProperty(name)) {
+                    var qty = inventory[name];
+                    if (search && !name.toLowerCase().includes(search)) continue;
+                    totalItems++;
+                    totalQty += qty;
+                    var lowClass = qty < 5 ? 'low' : '';
+                    html += '<div class="item-row"><span class="item-name">' + name + '</span><span class="item-qty ' + lowClass + '">' + qty + '</span></div>';
+                }
+            }
+
+            if (!html) html = '<div class="empty-state"><p>لا يوجد أصناف في المخزن</p></div>';
+            list.innerHTML = html;
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('totalQty').textContent = totalQty;
+        }
+
+        function updateAdminStats() {
+            var totalItems = 0, totalQty = 0;
+            for (var name in inventory) {
+                if (inventory.hasOwnProperty(name)) { totalItems++; totalQty += inventory[name]; }
+            }
+            var totalIn = 0, totalOut = 0;
+            for (var i = 0; i < transactions.length; i++) {
+                if (transactions[i].type === 'in') totalIn++; else totalOut++;
+            }
+            document.getElementById('adminTotalItems').textContent = totalItems;
+            document.getElementById('adminTotalQty').textContent = totalQty;
+            document.getElementById('adminTotalIn').textContent = totalIn;
+            document.getElementById('adminTotalOut').textContent = totalOut;
+        }
+
+        function updateEmployeesList() {
+            var list = document.getElementById('employeesList');
+            var html = '';
+            for (var id in employees) {
+                if (employees.hasOwnProperty(id)) {
+                    var emp = employees[id];
+                    html += '<div class="employee-card"><div><div class="employee-name">' + (emp.name || '') + '</div><div class="employee-user">@' + (emp.username || '') + '</div></div><button class="btn btn-danger btn-small" onclick="deleteEmployee(\'' + id + '\')">حذف</button></div>';
+                }
+            }
+            if (!html) html = '<div class="empty-state"><p>لا يوجد موظفين مسجلين</p></div>';
+            list.innerHTML = html;
+        }
+
+        function updateSelects() {
+            var items = [];
+            for (var name in inventory) { if (inventory.hasOwnProperty(name)) items.push(name); }
+            var selects = ['existingItemSelect', 'removeItemSelect'];
+            for (var s = 0; s < selects.length; s++) {
+                var select = document.getElementById(selects[s]);
+                var html = '<option value="">اختر صنف</option>';
+                for (var i = 0; i < items.length; i++) {
+                    html += '<option value="' + items[i] + '">' + items[i] + ' (' + inventory[items[i]] + ')</option>';
+                }
+                select.innerHTML = html;
+            }
+        }
+
+        function updateTransactionsList() {
+            var list = document.getElementById('transactionsList');
+            var html = '';
+            var filtered = [];
+            for (var i = 0; i < transactions.length; i++) {
+                if (transactionFilter === 'all' || transactions[i].type === transactionFilter) filtered.push(transactions[i]);
+            }
+            for (var i = 0; i < filtered.length; i++) {
+                var t = filtered[i];
+                var date = new Date(t.timestamp).toLocaleString('ar-EG');
+                var typeClass = t.type === 'in' ? 'in' : 'out';
+                var typeText = t.type === 'in' ? 'وارد' : 'صادر';
+                var icon = t.type === 'in' ? '⬇️' : '⬆️';
+                var notesHtml = t.notes ? '<div style="color:#888;margin-top:5px;font-size:12px;">📝 ' + t.notes + '</div>' : '';
+                html += '<div class="transaction-row ' + typeClass + '"><div style="display:flex;justify-content:space-between;align-items:center;"><span>' + icon + ' <strong>' + t.item + '</strong></span><span style="font-weight:bold;">' + t.qty + ' ' + typeText + '</span></div><div style="display:flex;justify-content:space-between;margin-top:5px;"><span class="transaction-user">👤 ' + t.user + '</span><span class="transaction-date">' + date + '</span></div>' + notesHtml + '</div>';
+            }
+            if (!html) html = '<div class="empty-state"><p>لا توجد حركات مسجلة</p></div>';
+            list.innerHTML = html;
+        }
+
+        function adminSearchItems() {
+            var search = document.getElementById('adminSearch').value.toLowerCase();
+            var list = document.getElementById('adminInventoryList');
+            var html = '';
+            for (var name in inventory) {
+                if (inventory.hasOwnProperty(name)) {
+                    var qty = inventory[name];
+                    if (search && !name.toLowerCase().includes(search)) continue;
+                    var lowClass = qty < 5 ? 'low' : '';
+                    html += '<div class="item-row"><span class="item-name">' + name + '</span><div><span class="item-qty ' + lowClass + '">' + qty + '</span><button class="btn btn-danger btn-small" onclick="deleteItem(\'' + name + '\')">حذف</button></div></div>';
+                }
+            }
+            if (!html) html = '<div class="empty-state"><p>لا يوجد نتائج</p></div>';
+            list.innerHTML = html;
+        }
+
+        // ============================================
+        // GOOGLE SHEETS
+        // ============================================
+        function saveSheetsUrl() {
+            sheetsUrl = document.getElementById('sheetsUrl').value.trim();
+            localStorage.setItem('sheetsUrl', sheetsUrl);
+            showToast('تم حفظ رابط Google Sheets');
+        }
+
+        function sendToSheets(data) {
+            if (!sheetsUrl) return;
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', sheetsUrl, true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.send(JSON.stringify(data));
+            } catch (e) { console.log('Sheets sync error:', e); }
+        }
+
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function showPage(pageId) {
+            var pages = document.querySelectorAll('.page');
+            for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function switchEmpTab(tab) {
+            var tabs = document.querySelectorAll('#employeePage .tab');
+            for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+            var allTabs = document.querySelectorAll('[data-emptab]');
+            for (var i = 0; i < allTabs.length; i++) {
+                if (allTabs[i].getAttribute('data-emptab') === tab) allTabs[i].classList.add('active');
+            }
+            document.getElementById('empTab-inventory').classList.add('hidden');
+            document.getElementById('empTab-add').classList.add('hidden');
+            document.getElementById('empTab-remove').classList.add('hidden');
+            document.getElementById('empTab-' + tab).classList.remove('hidden');
+            var navItems = document.querySelectorAll('#employeePage .nav-item');
+            for (var i = 0; i < navItems.length; i++) navItems[i].classList.remove('active');
+            if (tab === 'inventory') navItems[0].classList.add('active');
+            if (tab === 'add') navItems[1].classList.add('active');
+            if (tab === 'remove') navItems[2].classList.add('active');
+        }
+
+        function switchAdminTab(tab) {
+            var tabs = document.querySelectorAll('#adminMainTabs .tab');
+            for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+            var allTabs = document.querySelectorAll('#adminMainTabs [data-admintab]');
+            for (var i = 0; i < allTabs.length; i++) {
+                if (allTabs[i].getAttribute('data-admintab') === tab) allTabs[i].classList.add('active');
+            }
+            document.getElementById('adminTab-inventory').classList.add('hidden');
+            document.getElementById('adminTab-employees').classList.add('hidden');
+            document.getElementById('adminTab-transactions').classList.add('hidden');
+            document.getElementById('adminTab-reports').classList.add('hidden');
+            document.getElementById('adminTab-' + tab).classList.remove('hidden');
+            if (tab === 'inventory') adminSearchItems();
+            var navItems = document.querySelectorAll('#adminPage .nav-item');
+            for (var i = 0; i < navItems.length; i++) navItems[i].classList.remove('active');
+            if (tab === 'inventory') navItems[0].classList.add('active');
+            if (tab === 'employees') navItems[1].classList.add('active');
+            if (tab === 'transactions') navItems[2].classList.add('active');
+            if (tab === 'reports') navItems[3].classList.add('active');
+        }
+
+        function filterTransactions(type) {
+            transactionFilter = type;
+            var tabs = document.querySelectorAll('#transFilterTabs .tab');
+            for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+            var allTabs = document.querySelectorAll('#transFilterTabs [data-transfilter]');
+            for (var i = 0; i < allTabs.length; i++) {
+                if (allTabs[i].getAttribute('data-transfilter') === type) allTabs[i].classList.add('active');
+            }
+            updateTransactionsList();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // ============================================
+        // AUTH
+        // ============================================
+        function login() {
+            var username = document.getElementById('loginUsername').value.trim();
+            var password = document.getElementById('loginPassword').value;
+            if (!username || !password) {
+                showToast('يرجى إدخال اسم المستخدم وكلمة المرور', 'error');
+                return;
+            }
+            var found = false;
+            for (var id in employees) {
+                if (employees.hasOwnProperty(id)) {
+                    var emp = employees[id];
+                    if (emp.username === username && emp.password === password) {
+                        currentUser = { id: id, name: emp.name, username: emp.username };
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (found) {
+                document.getElementById('employeeName').textContent = 'مرحبا، ' + currentUser.name;
+                showPage('employeePage');
+                showToast('تم تسجيل الدخول بنجاح');
+            } else {
+                showToast('اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
+            }
+        }
+
+        function showAdminLogin() {
+            document.getElementById('adminLoginModal').classList.add('active');
+            document.getElementById('adminPassword').value = '';
+            setTimeout(function() { document.getElementById('adminPassword').focus(); }, 100);
+        }
+
+        function adminLogin() {
+            var password = document.getElementById('adminPassword').value;
+            if (password === '1997') {
+                currentUser = { name: 'المدير', username: 'admin', isAdmin: true };
+                closeModal('adminLoginModal');
+                showPage('adminPage');
+                adminSearchItems();
+                showToast('تم تسجيل دخول المدير');
+                document.getElementById('adminPassword').value = '';
+            } else {
+                showToast('كلمة المرور غير صحيحة', 'error');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            showPage('loginPage');
+            showToast('تم تسجيل الخروج');
+        }
+
+        // ============================================
+        // ACTIONS
+        // ============================================
+        function changeQty(inputId, delta) {
+            var input = document.getElementById(inputId);
+            var val = parseInt(input.value) || 0;
+            val = Math.max(1, val + delta);
+            input.value = val;
+        }
+
+        function addNewItem() {
+            var name = document.getElementById('newItemName').value.trim();
+            var qty = parseInt(document.getElementById('newItemQty').value) || 0;
+            if (!name) { showToast('يرجى إدخال اسم الصنف', 'error'); return; }
+            if (inventory[name]) { showToast('هذا الصنف موجود بالفعل', 'error'); return; }
+
+            if (db && firebaseConnected) {
+                db.ref('inventory/' + name).set(qty, function(error) {
+                    if (error) {
+                        showToast('خطأ: ' + error.message, 'error');
+                    } else {
+                        var trans = { item: name, qty: qty, type: 'in', user: currentUser.name, timestamp: Date.now(), notes: 'صنف جديد' };
+                        db.ref('transactions').push(trans);
+                        sendToSheets(trans);
+                        document.getElementById('newItemName').value = '';
+                        document.getElementById('newItemQty').value = '1';
+                        showToast('تم إضافة الصنف بنجاح');
+                    }
+                });
+            } else {
+                // Offline mode
+                inventory[name] = qty;
+                var trans = { item: name, qty: qty, type: 'in', user: currentUser.name, timestamp: Date.now(), notes: 'صنف جديد (offline)' };
+                transactions.unshift(trans);
+                saveToLocalStorage();
+                updateInventoryDisplay();
+                updateAdminStats();
+                updateSelects();
+                document.getElementById('newItemName').value = '';
+                document.getElementById('newItemQty').value = '1';
+                showToast('تم الإضافة (وضع محلي)');
+            }
+        }
+
+        function addToExisting() {
+            var name = document.getElementById('existingItemSelect').value;
+            var qty = parseInt(document.getElementById('addQty').value) || 0;
+            if (!name) { showToast('يرجى اختيار صنف', 'error'); return; }
+            var newQty = (inventory[name] || 0) + qty;
+
+            if (db && firebaseConnected) {
+                db.ref('inventory/' + name).set(newQty, function(error) {
+                    if (error) {
+                        showToast('خطأ: ' + error.message, 'error');
+                    } else {
+                        var trans = { item: name, qty: qty, type: 'in', user: currentUser.name, timestamp: Date.now(), notes: 'إضافة كمية' };
+                        db.ref('transactions').push(trans);
+                        sendToSheets(trans);
+                        document.getElementById('existingItemSelect').value = '';
+                        document.getElementById('addQty').value = '1';
+                        showToast('تم إضافة الكمية بنجاح');
+                    }
+                });
+            } else {
+                inventory[name] = newQty;
+                var trans = { item: name, qty: qty, type: 'in', user: currentUser.name, timestamp: Date.now(), notes: 'إضافة كمية (offline)' };
+                transactions.unshift(trans);
+                saveToLocalStorage();
+                updateInventoryDisplay();
+                updateAdminStats();
+                updateSelects();
+                document.getElementById('existingItemSelect').value = '';
+                document.getElementById('addQty').value = '1';
+                showToast('تم الإضافة (وضع محلي)');
+            }
+        }
+
+        function removeItem() {
+            var name = document.getElementById('removeItemSelect').value;
+            var qty = parseInt(document.getElementById('removeQty').value) || 0;
+            var notes = document.getElementById('removeNotes').value.trim();
+            if (!name) { showToast('يرجى اختيار صنف', 'error'); return; }
+            var currentQty = inventory[name] || 0;
+            if (qty > currentQty) { showToast('الكمية المطلوبة أكبر من المخزون المتاح', 'error'); return; }
+            var newQty = currentQty - qty;
+
+            function onComplete() {
+                var trans = { item: name, qty: qty, type: 'out', user: currentUser.name, timestamp: Date.now(), notes: notes || 'خروج صنف' };
+                if (db && firebaseConnected) {
+                    db.ref('transactions').push(trans);
+                    sendToSheets(trans);
+                } else {
+                    transactions.unshift(trans);
+                    saveToLocalStorage();
+                    updateTransactionsList();
+                }
+                document.getElementById('removeItemSelect').value = '';
+                document.getElementById('removeQty').value = '1';
+                document.getElementById('removeNotes').value = '';
+                showToast('تم تسجيل الخروج بنجاح');
+            }
+
+            if (db && firebaseConnected) {
+                if (newQty <= 0) {
+                    db.ref('inventory/' + name).remove(function(error) {
+                        if (error) showToast('خطأ: ' + error.message, 'error');
+                        else onComplete();
+                    });
+                } else {
+                    db.ref('inventory/' + name).set(newQty, function(error) {
+                        if (error) showToast('خطأ: ' + error.message, 'error');
+                        else onComplete();
+                    });
+                }
+            } else {
+                if (newQty <= 0) delete inventory[name];
+                else inventory[name] = newQty;
+                onComplete();
+                saveToLocalStorage();
+                updateInventoryDisplay();
+                updateAdminStats();
+                updateSelects();
+            }
+        }
+
+        function addEmployee() {
+            var name = document.getElementById('empName').value.trim();
+            var username = document.getElementById('empUsername').value.trim();
+            var password = document.getElementById('empPassword').value;
+            var debugDiv = document.getElementById('empDebug');
+            var connDiv = document.getElementById('empConnStatus');
+
+            if (!name || !username || !password) {
+                showToast('يرجى ملء جميع الحقول', 'error');
+                return;
+            }
+
+            var exists = false;
+            for (var id in employees) {
+                if (employees.hasOwnProperty(id)) {
+                    if (employees[id].username === username) { exists = true; break; }
+                }
+            }
+            if (exists) { showToast('اسم المستخدم موجود بالفعل', 'error'); return; }
+
+            var empData = { name: name, username: username, password: password };
+            var id = 'emp_' + Date.now();
+
+            debugDiv.style.display = 'block';
+            debugDiv.textContent = 'جاري الإضافة...';
+            connDiv.style.display = 'block';
+            connDiv.className = 'connection-status';
+            connDiv.textContent = 'جاري الاتصال...';
+
+            console.log('Adding employee:', id, empData);
+
+            if (db && firebaseConnected) {
+                db.ref('employees/' + id).set(empData, function(error) {
+                    console.log('Set callback called, error:', error);
+                    if (error) {
+                        debugDiv.textContent = 'خطأ Firebase: ' + error.message;
+                        connDiv.className = 'connection-status error';
+                        connDiv.textContent = 'خطأ: ' + error.message;
+                        showToast('خطأ في الإضافة: ' + error.message, 'error');
+                    } else {
+                        document.getElementById('empName').value = '';
+                        document.getElementById('empUsername').value = '';
+                        document.getElementById('empPassword').value = '';
+                        debugDiv.textContent = 'تم الإضافة بنجاح!';
+                        connDiv.className = 'connection-status ok';
+                        connDiv.textContent = 'تم الإضافة بنجاح!';
+                        showToast('تم إضافة الموظف بنجاح');
+                        setTimeout(function() { 
+                            debugDiv.style.display = 'none'; 
+                            connDiv.style.display = 'none';
+                        }, 3000);
+                    }
+                });
+            } else {
+                // Offline mode - save to localStorage
+                employees[id] = empData;
+                saveToLocalStorage();
+                updateEmployeesList();
+                document.getElementById('empName').value = '';
+                document.getElementById('empUsername').value = '';
+                document.getElementById('empPassword').value = '';
+                debugDiv.textContent = 'تم الإضافة (وضع محلي)';
+                connDiv.className = 'connection-status warn';
+                connDiv.textContent = 'محفوظ محلياً - Firebase غير متصل';
+                showToast('تم إضافة الموظف (وضع محلي)');
+                setTimeout(function() { 
+                    debugDiv.style.display = 'none'; 
+                    connDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function deleteEmployee(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا الموظف؟')) return;
+            if (db && firebaseConnected) {
+                db.ref('employees/' + id).remove(function(error) {
+                    if (error) showToast('خطأ في الحذف: ' + error.message, 'error');
+                    else showToast('تم حذف الموظف');
+                });
+            } else {
+                delete employees[id];
+                saveToLocalStorage();
+                updateEmployeesList();
+                showToast('تم حذف الموظف');
+            }
+        }
+
+        function deleteItem(name) {
+            if (!confirm('هل أنت متأكد من حذف هذا الصنف؟')) return;
+            if (db && firebaseConnected) {
+                db.ref('inventory/' + name).remove(function(error) {
+                    if (error) showToast('خطأ في الحذف: ' + error.message, 'error');
+                    else showToast('تم حذف الصنف');
+                });
+            } else {
+                delete inventory[name];
+                saveToLocalStorage();
+                updateInventoryDisplay();
+                updateAdminStats();
+                updateSelects();
+                showToast('تم حذف الصنف');
+            }
+        }
+
+        function searchItems() { updateInventoryDisplay(); }
+
+        // ============================================
+        // REPORTS
+        // ============================================
+        function exportInventoryReport() {
+            var data = [['الصنف', 'الكمية', 'الحالة']];
+            for (var name in inventory) {
+                if (inventory.hasOwnProperty(name)) {
+                    data.push([name, inventory[name], inventory[name] < 5 ? 'منخفض' : 'متوفر']);
+                }
+            }
+            var ws = XLSX.utils.aoa_to_sheet(data);
+            var wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'المخزون');
+            XLSX.writeFile(wb, 'تقرير_المخزون_' + new Date().toISOString().split('T')[0] + '.xlsx');
+            showToast('تم تحميل التقرير');
+        }
+
+        function exportInReport() {
+            var from = new Date(document.getElementById('inFromDate').value).getTime();
+            var to = new Date(document.getElementById('inToDate').value).getTime() + 86400000;
+            var data = [['التاريخ', 'الصنف', 'الكمية', 'الموظف', 'ملاحظات']];
+            for (var i = 0; i < transactions.length; i++) {
+                var t = transactions[i];
+                if (t.type === 'in' && t.timestamp >= from && t.timestamp <= to) {
+                    data.push([new Date(t.timestamp).toLocaleString('ar-EG'), t.item, t.qty, t.user, t.notes || '']);
+                }
+            }
+            var ws = XLSX.utils.aoa_to_sheet(data);
+            var wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'الوارد');
+            XLSX.writeFile(wb, 'تقرير_الوارد_' + new Date().toISOString().split('T')[0] + '.xlsx');
+            showToast('تم تحميل تقرير الوارد');
+        }
+
+        function exportOutReport() {
+            var from = new Date(document.getElementById('outFromDate').value).getTime();
+            var to = new Date(document.getElementById('outToDate').value).getTime() + 86400000;
+            var data = [['التاريخ', 'الصنف', 'الكمية', 'الموظف', 'ملاحظات']];
+            for (var i = 0; i < transactions.length; i++) {
+                var t = transactions[i];
+                if (t.type === 'out' && t.timestamp >= from && t.timestamp <= to) {
+                    data.push([new Date(t.timestamp).toLocaleString('ar-EG'), t.item, t.qty, t.user, t.notes || '']);
+                }
+            }
+            var ws = XLSX.utils.aoa_to_sheet(data);
+            var wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'الصادر');
+            XLSX.writeFile(wb, 'تقرير_الصادر_' + new Date().toISOString().split('T')[0] + '.xlsx');
+            showToast('تم تحميل تقرير الصادر');
+        }
+
+        function exportFullReport() {
+            var from = new Date(document.getElementById('fullFromDate').value).getTime();
+            var to = new Date(document.getElementById('fullToDate').value).getTime() + 86400000;
+            var data = [['التاريخ', 'النوع', 'الصنف', 'الكمية', 'الموظف', 'ملاحظات']];
+            for (var i = 0; i < transactions.length; i++) {
+                var t = transactions[i];
+                if (t.timestamp >= from && t.timestamp <= to) {
+                    data.push([new Date(t.timestamp).toLocaleString('ar-EG'), t.type === 'in' ? 'وارد' : 'صادر', t.item, t.qty, t.user, t.notes || '']);
+                }
+            }
+            var ws = XLSX.utils.aoa_to_sheet(data);
+            var wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'التقرير الشامل');
+            XLSX.writeFile(wb, 'تقرير_شامل_' + new Date().toISOString().split('T')[0] + '.xlsx');
+            showToast('تم تحميل التقرير الشامل');
+        }
+
+        function showToast(message, type) {
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + (type === 'error' ? 'error ' : '');
+            toast.classList.add('show');
+            setTimeout(function() { toast.classList.remove('show'); }, 3000);
+        }
+    </script>
+</body>
+</html>
