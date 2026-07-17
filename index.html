@@ -9,85 +9,114 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #fff; overflow-x: hidden; }
+        body { background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%); min-height: 100vh; color: #f5f5f5; overflow-x: hidden; }
         .container { max-width: 480px; margin: 0 auto; padding: 15px; min-height: 100vh; }
         .page { display: none; animation: fadeIn 0.4s ease; }
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .card { background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); }
-        .card-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #00d4ff; text-align: center; }
+        .app-header { text-align: center; padding: 20px 0 10px 0; }
+        .app-header .logo-img { width: 90px; height: 90px; object-fit: contain; border-radius: 16px; margin-bottom: 10px; filter: drop-shadow(0 4px 12px rgba(0,212,255,0.3)); }
+        .app-header h1 { font-size: 26px; background: linear-gradient(135deg, #00d4ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 4px; font-weight: 800; }
+        .app-header p { color: #a0a0a0; font-size: 13px; letter-spacing: 1px; }
+        .card { background: linear-gradient(145deg, #141414, #1c1c1c); border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(212,175,55,0.15); box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,175,55,0.05); }
+        .card-title { font-size: 17px; font-weight: 700; margin-bottom: 15px; color: #d4af37; text-align: center; letter-spacing: 0.5px; }
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 6px; font-size: 14px; color: #aaa; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 15px; border: none; border-radius: 10px; background: rgba(255,255,255,0.1); color: #fff; font-size: 16px; outline: none; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { background: rgba(255,255,255,0.15); box-shadow: 0 0 0 2px #00d4ff; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 13px; color: #a0a0a0; font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 13px 16px; border: 1px solid rgba(212,175,55,0.2); border-radius: 12px; background: rgba(20,20,20,0.8); color: #f5f5f5; font-size: 15px; outline: none; transition: all 0.3s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { background: rgba(30,30,30,0.9); box-shadow: 0 0 0 2px rgba(212,175,55,0.3); border-color: #d4af37; }
         .form-group textarea { min-height: 60px; resize: vertical; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; margin-bottom: 10px; }
-        .btn-primary { background: linear-gradient(135deg, #00d4ff, #0099cc); color: #fff; }
-        .btn-success { background: linear-gradient(135deg, #00ff88, #00cc66); color: #fff; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-bottom: 10px; letter-spacing: 0.5px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: linear-gradient(135deg, #d4af37, #b8941f); color: #000; }
+        .btn-success { background: linear-gradient(135deg, #00ff88, #00cc66); color: #000; }
         .btn-danger { background: linear-gradient(135deg, #ff4757, #cc0033); color: #fff; }
-        .btn-info { background: linear-gradient(135deg, #74b9ff, #0984e3); color: #fff; }
-        .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
-        .btn-small { padding: 6px 10px; font-size: 12px; width: auto; display: inline-block; margin: 2px; }
+        .btn-info { background: linear-gradient(135deg, #c9a84c, #a08528); color: #000; }
+        .btn-secondary { background: rgba(20,20,20,0.8); color: #f5f5f5; border: 1px solid rgba(212,175,55,0.2); }
+        .btn-warning { background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; }
+        .btn-small { padding: 6px 12px; font-size: 12px; width: auto; display: inline-block; margin: 2px; border-radius: 8px; }
         .btn-delete { background: #ff4757; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
-        .logo { text-align: center; padding: 30px 0; }
-        .logo h1 { font-size: 32px; background: linear-gradient(135deg, #00d4ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
-        .logo p { color: #888; font-size: 14px; }
         .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
-        .stat-box { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.08); }
-        .stat-box .number { font-size: 28px; font-weight: bold; color: #00d4ff; }
-        .stat-box .label { font-size: 12px; color: #888; margin-top: 5px; }
+        .stat-box { background: linear-gradient(145deg, #141414, #1c1c1c); border-radius: 14px; padding: 16px; text-align: center; border: 1px solid rgba(212,175,55,0.12); box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: all 0.3s; }
+        .stat-box:hover { box-shadow: 0 8px 25px rgba(212,175,55,0.1); transform: translateY(-2px); border-color: rgba(212,175,55,0.25); }
+        .stat-box .number { font-size: 26px; font-weight: 800; color: #d4af37; }
+        .stat-box .label { font-size: 11px; color: #a0a0a0; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
         .item-list { max-height: 400px; overflow-y: auto; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); }
-        .item-name { font-weight: bold; font-size: 15px; }
-        .item-qty { background: #00d4ff; color: #000; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
-        .item-qty.low { background: #ff4757; color: #fff; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 14px; background: linear-gradient(145deg, #141414, #1c1c1c); border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(212,175,55,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.2s; }
+        .item-row:hover { box-shadow: 0 4px 20px rgba(212,175,55,0.08); border-color: rgba(212,175,55,0.2); }
+        .item-name { font-weight: 600; font-size: 14px; color: #f5f5f5; }
+        .item-qty { background: linear-gradient(135deg, #d4af37, #b8941f); color: #000; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .item-qty.low { background: linear-gradient(135deg, #ff4757, #cc0033); color: #fff; }
         .search-box { position: relative; margin-bottom: 15px; }
-        .search-box input { width: 100%; padding: 12px 15px 12px 45px; border: none; border-radius: 10px; background: rgba(255,255,255,0.1); color: #fff; font-size: 15px; outline: none; }
+        .search-box input { width: 100%; padding: 13px 16px 13px 45px; border: 1px solid rgba(212,175,55,0.2); border-radius: 12px; background: rgba(20,20,20,0.8); color: #f5f5f5; font-size: 14px; outline: none; }
         .search-box::before { content: "🔍"; position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 16px; }
-        .nav-bar { display: flex; justify-content: space-around; background: rgba(0,0,0,0.3); padding: 10px 0; position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; backdrop-filter: blur(10px); }
-        .nav-item { text-align: center; color: #888; font-size: 11px; cursor: pointer; padding: 5px 10px; }
-        .nav-item.active { color: #00d4ff; }
-        .nav-item .icon { font-size: 22px; display: block; margin-bottom: 2px; }
+        .nav-bar { display: flex; justify-content: space-around; background: linear-gradient(180deg, #141414, #0a0a0a); padding: 10px 0; position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid rgba(212,175,55,0.15); z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.4); }
+        .nav-item { text-align: center; color: #888888; font-size: 10px; cursor: pointer; padding: 5px 10px; transition: all 0.3s; border-radius: 8px; }
+        .nav-item.active { color: #d4af37; background: rgba(212,175,55,0.1); }
+        .nav-item .icon { font-size: 20px; display: block; margin-bottom: 2px; }
         .hidden { display: none !important; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(5px); }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 16px; padding: 25px; width: 100%; max-width: 400px; border: 1px solid rgba(255,255,255,0.1); }
-        .transaction-row { padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; font-size: 13px; border-right: 3px solid #00d4ff; position: relative; }
+        .modal-content { background: linear-gradient(145deg, #141414, #1c1c1c); border-radius: 20px; padding: 25px; width: 100%; max-width: 400px; border: 1px solid rgba(212,175,55,0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(212,175,55,0.05); }
+        .transaction-row { padding: 14px; background: linear-gradient(145deg, #141414, #1c1c1c); border-radius: 10px; margin-bottom: 8px; font-size: 13px; border-right: 3px solid #d4af37; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
         .transaction-row.out { border-right-color: #ff4757; }
         .transaction-row.in { border-right-color: #00ff88; }
-        .transaction-date { color: #888; font-size: 11px; }
-        .transaction-user { color: #00d4ff; font-weight: bold; }
-        .transaction-location { color: #ffcc00; font-size: 12px; margin-top: 3px; }
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
-        .tab { padding: 8px 16px; background: rgba(255,255,255,0.05); border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); }
-        .tab.active { background: #00d4ff; color: #000; font-weight: bold; }
-        .empty-state { text-align: center; padding: 40px 20px; color: #666; }
-        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #00ff88; color: #000; padding: 12px 25px; border-radius: 10px; font-weight: bold; z-index: 2000; transition: all 0.3s; }
+        .transaction-date { color: #888888; font-size: 11px; }
+        .transaction-user { color: #d4af37; font-weight: 600; }
+        .transaction-location { color: #d4af37; font-size: 12px; margin-top: 4px; }
+        .tabs { display: flex; gap: 6px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 4px; }
+        .tab { padding: 9px 18px; background: rgba(20,20,20,0.8); border-radius: 24px; font-size: 12px; cursor: pointer; white-space: nowrap; border: 1px solid rgba(212,175,55,0.15); transition: all 0.3s; font-weight: 500; color: #a0a0a0; }
+        .tab:hover { background: rgba(212,175,55,0.1); color: #d4af37; }
+        .tab.active { background: linear-gradient(135deg, #d4af37, #b8941f); color: #000; font-weight: 700; border-color: transparent; box-shadow: 0 4px 15px rgba(212,175,55,0.3); }
+        .empty-state { text-align: center; padding: 40px 20px; color: #666666; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #00ff88; color: #000; padding: 14px 28px; border-radius: 12px; font-weight: 700; z-index: 2000; transition: all 0.4s; box-shadow: 0 8px 30px rgba(0,255,136,0.3); }
         .toast.show { transform: translateX(-50%) translateY(0); }
-        .toast.error { background: #ff4757; color: #fff; }
+        .toast.error { background: #ff4757; color: #fff; box-shadow: 0 8px 30px rgba(255,71,87,0.3); }
         .qty-input-group { display: flex; align-items: center; gap: 10px; }
-        .qty-input-group button { width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.1); color: #fff; font-size: 18px; cursor: pointer; }
-        .qty-input-group input { width: 80px; text-align: center; padding: 8px; border: none; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; font-size: 16px; }
-        .config-section { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px dashed rgba(0,212,255,0.3); }
-        .config-section h3 { color: #00d4ff; font-size: 14px; margin-bottom: 10px; }
+        .qty-input-group button { width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(212,175,55,0.1); color: #d4af37; color: #fff; font-size: 18px; cursor: pointer; transition: all 0.2s; }
+        .qty-input-group button:hover { background: rgba(212,175,55,0.15); border-color: #d4af37; }
+        .qty-input-group input { width: 80px; text-align: center; padding: 10px; border: none; border-radius: 10px; box-shadow: 0 4px 20px rgba(212,175,55,0.08); border-color: rgba(212,175,55,0.2); color: #fff; font-size: 16px; }
+        .config-section { background: rgba(20,20,20,0.6); border-radius: 14px; padding: 16px; margin-bottom: 15px; border: 1px dashed rgba(212,175,55,0.3); }
+        .config-section h3 { color: #d4af37; font-size: 14px; margin-bottom: 10px; font-weight: 600; }
         .link-input { font-size: 12px !important; direction: ltr; text-align: left; }
-        .debug-info { background: rgba(255,200,0,0.1); border: 1px solid rgba(255,200,0,0.3); border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 12px; color: #ffcc00; }
-        .connection-status { text-align: center; padding: 10px; font-size: 12px; margin-bottom: 10px; border-radius: 8px; }
+        .debug-info { background: rgba(255,200,0,0.1); border: 1px solid rgba(255,200,0,0.3); border-radius: 10px; padding: 12px; margin-top: 10px; font-size: 12px; color: #f39c12; }
+        .connection-status { text-align: center; padding: 12px; font-size: 12px; margin-bottom: 12px; border-radius: 10px; font-weight: 500; }
         .connection-status.ok { background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
         .connection-status.error { background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid rgba(255,71,87,0.3); }
-        .connection-status.warn { background: rgba(255,200,0,0.1); color: #ffcc00; border: 1px solid rgba(255,200,0,0.3); }
-        .employee-card { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); }
-        .employee-name { font-weight: bold; font-size: 15px; color: #fff; }
-        .employee-user { color: #888; font-size: 12px; margin-top: 3px; }
-        .section-title { font-size: 16px; font-weight: bold; color: #00d4ff; margin: 15px 0 10px 0; }
+        .connection-status.warn { background: rgba(255,200,0,0.1); color: #f39c12; border: 1px solid rgba(255,200,0,0.3); }
+        .employee-card { display: flex; justify-content: space-between; align-items: center; padding: 14px; background: linear-gradient(145deg, #141414, #1c1c1c); border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(212,175,55,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.2s; }
+        .employee-card:hover { box-shadow: 0 4px 20px rgba(212,175,55,0.08); border-color: rgba(212,175,55,0.2); }
+        .employee-name { font-weight: 600; font-size: 14px; color: #f5f5f5; color: #1a1a2e; }
+        .employee-user { color: #a0a0a0; font-size: 12px; margin-top: 3px; }
+        .section-title { font-size: 15px; font-weight: 700; color: #d4af37; margin: 18px 0 12px 0; letter-spacing: 0.5px; }
         .date-range { display: flex; gap: 10px; margin-bottom: 10px; }
-        .date-range input { flex: 1; padding: 10px; border: none; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; font-size: 14px; }
-        .sync-status { text-align: center; padding: 8px; font-size: 12px; border-radius: 8px; margin-top: 10px; display: none; }
+        .date-range input { flex: 1; padding: 11px; border: none; border-radius: 10px; box-shadow: 0 4px 20px rgba(212,175,55,0.08); border-color: rgba(212,175,55,0.2); color: #fff; font-size: 14px; }
+        .sync-status { text-align: center; padding: 10px; font-size: 12px; border-radius: 10px; margin-top: 10px; display: none; font-weight: 500; color: #f5f5f5; }
         .sync-status.show { display: block; }
-        .danger-zone { background: rgba(255,71,87,0.1); border: 1px dashed rgba(255,71,87,0.5); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .danger-zone h3 { color: #ff4757; font-size: 14px; margin-bottom: 10px; }
+        .danger-zone { background: rgba(255,71,87,0.05); border: 1px dashed rgba(255,71,87,0.3); border-radius: 14px; padding: 16px; margin-bottom: 15px; }
+        .danger-zone h3 { color: #ff4757; font-size: 14px; margin-bottom: 10px; font-weight: 600; }
         .trans-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .trans-actions { display: flex; gap: 5px; }
+        .archive-card { background: linear-gradient(145deg, #141414, #1c1c1c); border-radius: 14px; padding: 16px; margin-bottom: 10px; border: 1px solid rgba(212,175,55,0.12); box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: all 0.3s; }
+        .archive-card:hover { box-shadow: 0 8px 25px rgba(212,175,55,0.1); transform: translateY(-2px); border-color: rgba(212,175,55,0.25); }
+        .archive-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .archive-name { font-weight: 700; font-size: 14px; color: #f5f5f5; }
+        .archive-date { color: #888888; font-size: 11px; }
+        .archive-stats { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .archive-stat { font-size: 12px; color: #a0a0a0; }
+        .archive-stat span { color: #d4af37; font-weight: 700; }
+        .archive-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .archive-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; margin-right: 8px; }
+        .archive-badge.auto { background: rgba(0,255,136,0.15); color: #00ff88; }
+        .archive-badge.manual { background: rgba(212,175,55,0.15); color: #d4af37; }
+        .archive-badge.pre-reset { background: rgba(255,71,87,0.15); color: #ff4757; }
+        .pre-reset-modal { text-align: center; padding: 10px 0; }
+        .pre-reset-modal h3 { color: #f39c12; font-size: 18px; margin-bottom: 15px; }
+        .pre-reset-modal p { color: #a0a0a0; font-size: 14px; margin-bottom: 20px; line-height: 1.8; }
+        .pre-reset-actions { display: flex; flex-direction: column; gap: 10px; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.3); border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -95,9 +124,10 @@
 
     <div class="page active" id="loginPage">
         <div class="container">
-            <div class="logo">
+            <div class="app-header">
+                <img src="https://i.postimg.cc/RC3hKqzV/file-00000000ee4872309031751a56ae9d94.png" class="logo-img" alt="شعار المخزن">
                 <h1>نظام إدارة المخزن</h1>
-                <p>تسجيل دخول الموظفين</p>
+                <p style="color:#a0a0a0;">تسجيل دخول الموظفين</p>
             </div>
             <div class="card">
                 <div class="connection-status" id="connStatus" style="display:none;"></div>
@@ -127,11 +157,26 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="preResetModal">
+        <div class="modal-content">
+            <div class="pre-reset-modal">
+                <h3>تحذير: تصفير جميع البيانات</h3>
+                <p>هيتم حذف كل البيانات (المخزون، الموظفين، الحركات).<br>عايز تصدر نسخة Excel قبل التصفير؟</p>
+                <div class="pre-reset-actions">
+                    <button class="btn btn-success" id="btnExportBeforeReset">تصدير نسخة Excel الآن</button>
+                    <button class="btn btn-warning" id="btnSkipExport">تخطي التصدير واستمرار</button>
+                    <button class="btn btn-secondary" id="btnCancelReset">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="page" id="employeePage">
         <div class="container" style="padding-bottom: 80px;">
-            <div class="logo">
-                <h1>لوحة الموظف</h1>
-                <p id="employeeName">مرحبا</p>
+            <div class="app-header">
+                <img src="https://i.postimg.cc/RC3hKqzV/file-00000000ee4872309031751a56ae9d94.png" class="logo-img" alt="شعار المخزن" style="width:60px;height:60px;">
+                <h1 style="font-size:22px; background: linear-gradient(135deg, #00d4ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">لوحة الموظف</h1>
+                <p id="employeeName" style="color:#a0a0a0;">مرحبا</p>
             </div>
             <div class="stats-grid">
                 <div class="stat-box"><div class="number" id="totalItems">0</div><div class="label">إجمالي الأصناف</div></div>
@@ -183,7 +228,11 @@
 
     <div class="page" id="adminPage">
         <div class="container" style="padding-bottom: 80px;">
-            <div class="logo"><h1>لوحة المدير</h1><p>التحكم الكامل في النظام</p></div>
+            <div class="app-header">
+                <img src="https://i.postimg.cc/RC3hKqzV/file-00000000ee4872309031751a56ae9d94.png" class="logo-img" alt="شعار المخزن" style="width:60px;height:60px;">
+                <h1 style="font-size:22px; background: linear-gradient(135deg, #00d4ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">لوحة المدير</h1>
+                <p style="color:#a0a0a0;">التحكم الكامل في النظام</p>
+            </div>
             <div class="stats-grid">
                 <div class="stat-box"><div class="number" id="adminTotalItems">0</div><div class="label">الأصناف</div></div>
                 <div class="stat-box"><div class="number" id="adminTotalQty">0</div><div class="label">الكمية</div></div>
@@ -194,6 +243,7 @@
                 <div class="tab active" data-admintab="inventory">المخزون</div>
                 <div class="tab" data-admintab="employees">الموظفين</div>
                 <div class="tab" data-admintab="transactions">الحركات</div>
+                <div class="tab" data-admintab="archive">الأرشيف</div>
                 <div class="tab" data-admintab="reports">التقارير</div>
             </div>
             <div id="adminTab-inventory">
@@ -224,23 +274,32 @@
                     <div id="transactionsList"></div>
                 </div>
             </div>
+            <div id="adminTab-archive" class="hidden">
+                <div class="card">
+                    <div class="card-title">الأرشيف والنسخ الاحتياطية</div>
+                    <p style="color:#a0a0a0;font-size:13px;margin-bottom:15px;">كل نسخة احتياطية تحتوي على لقطة كاملة من البيانات في وقت معين</p>
+                    <button class="btn btn-success" id="btnCreateManualBackup">إنشاء نسخة احتياطية يدوية</button>
+                </div>
+                <div class="section-title">النسخ الاحتياطية المخزنة</div>
+                <div id="archiveList"></div>
+            </div>
             <div id="adminTab-reports" class="hidden">
                 <div class="config-section">
                     <h3>رابط Google Sheets</h3>
-                    <p>ضع هنا رابط Web App من Google Apps Script</p>
+                    <p style="color:#a0a0a0;font-size:12px;margin-bottom:10px;">ضع هنا رابط Web App من Google Apps Script</p>
                     <div class="form-group"><input type="text" id="sheetsUrl" class="link-input" placeholder="https://script.google.com/macros/s/.../exec" value=""></div>
                     <button class="btn btn-info" id="btnSaveSheetsUrl">حفظ الرابط</button>
                     <div class="sync-status" id="syncStatus"></div>
                 </div>
                 <div class="card">
                     <div class="card-title">تصدير كل البيانات للـ Google Sheets</div>
-                    <p style="color:#888;font-size:13px;margin-bottom:15px;">هيتم إرسال كل البيانات (المخزون + الموظفين + الوارد + الصادر) للـ Google Sheets مرة واحدة</p>
+                    <p style="color:#a0a0a0;font-size:13px;margin-bottom:15px;">هيتم إرسال كل البيانات (المخزون + الموظفين + الوارد + الصادر) للـ Google Sheets مرة واحدة</p>
                     <button class="btn btn-success" id="btnSyncAll">تصدير كل البيانات</button>
                     <div class="sync-status" id="syncAllStatus"></div>
                 </div>
                 <div class="danger-zone">
                     <h3>منطقة الخطر</h3>
-                    <p style="color:#888;font-size:13px;margin-bottom:10px;">تحذير: هذه العملية لا يمكن التراجع عنها!</p>
+                    <p style="color:#a0a0a0;font-size:13px;margin-bottom:10px;">تحذير: هذه العملية لا يمكن التراجع عنها!</p>
                     <button class="btn btn-danger" id="btnResetAll">تصفير جميع البيانات</button>
                 </div>
                 <div class="card"><div class="card-title">تقرير المخزون الحالي</div><button class="btn btn-success" id="btnExportInventory">تحميل تقرير المخزون (Excel)</button></div>
@@ -253,6 +312,7 @@
             <div class="nav-item active" data-adminnav="inventory"><span class="icon">📦</span><span>المخزون</span></div>
             <div class="nav-item" data-adminnav="employees"><span class="icon">👥</span><span>الموظفين</span></div>
             <div class="nav-item" data-adminnav="transactions"><span class="icon">📋</span><span>الحركات</span></div>
+            <div class="nav-item" data-adminnav="archive"><span class="icon">🗄️</span><span>الأرشيف</span></div>
             <div class="nav-item" data-adminnav="reports"><span class="icon">📊</span><span>تقارير</span></div>
             <div class="nav-item" data-adminnav="logout"><span class="icon">🚪</span><span>خروج</span></div>
         </div>
@@ -287,11 +347,13 @@
         var transactions = [];
         var transactionFilter = 'all';
         var sheetsUrl = 'https://script.google.com/macros/s/AKfycbxVEg73ocne-40ofl1LiT_zKMhb2WzQRadqtHQqicOV__SgXYqajVybkcA2w7WiMOhF/exec';
+        var archives = [];
 
         function saveToLocalStorage() {
             localStorage.setItem('inventory', JSON.stringify(inventory));
             localStorage.setItem('employees', JSON.stringify(employees));
             localStorage.setItem('transactions', JSON.stringify(transactions));
+            localStorage.setItem('archives', JSON.stringify(archives));
         }
 
         function loadFromLocalStorage() {
@@ -299,20 +361,233 @@
                 var inv = localStorage.getItem('inventory');
                 var emp = localStorage.getItem('employees');
                 var trans = localStorage.getItem('transactions');
+                var arch = localStorage.getItem('archives');
                 if (inv) inventory = JSON.parse(inv);
                 if (emp) employees = JSON.parse(emp);
                 if (trans) {
                     transactions = JSON.parse(trans);
                     transactions.sort(function(a, b) { return b.timestamp - a.timestamp; });
                 }
+                if (arch) {
+                    archives = JSON.parse(arch);
+                    archives.sort(function(a, b) { return b.timestamp - a.timestamp; });
+                }
                 updateInventoryDisplay();
                 updateAdminStats();
                 updateSelects();
                 updateEmployeesList();
                 updateTransactionsList();
+                updateArchiveList();
             } catch (e) {
                 console.error('localStorage error:', e);
             }
+        }
+
+        function createArchive(name, type, description) {
+            var archive = {
+                id: 'arc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                name: name || 'نسخة احتياطية',
+                type: type || 'manual',
+                description: description || '',
+                timestamp: Date.now(),
+                dateStr: new Date().toLocaleString('ar-EG'),
+                inventory: JSON.parse(JSON.stringify(inventory)),
+                employees: JSON.parse(JSON.stringify(employees)),
+                transactions: JSON.parse(JSON.stringify(transactions)),
+                stats: {
+                    items: Object.keys(inventory).length,
+                    qty: (function() { var t = 0; for (var k in inventory) t += inventory[k]; return t; })(),
+                    employees: Object.keys(employees).length,
+                    transactions: transactions.length
+                }
+            };
+            archives.unshift(archive);
+            saveToLocalStorage();
+            if (db && firebaseConnected) {
+                db.ref('archives/' + archive.id).set(archive);
+            }
+            updateArchiveList();
+            return archive;
+        }
+
+        function deleteArchive(id) {
+            if (!confirm('هل أنت متأكد من حذف هذه النسخة الاحتياطية؟')) return;
+            var newArchives = [];
+            for (var i = 0; i < archives.length; i++) {
+                if (archives[i].id !== id) newArchives.push(archives[i]);
+            }
+            archives = newArchives;
+            saveToLocalStorage();
+            if (db && firebaseConnected) {
+                db.ref('archives/' + id).remove();
+            }
+            updateArchiveList();
+            showToast('تم حذف النسخة');
+        }
+
+        function restoreArchive(id) {
+            var arc = null;
+            for (var i = 0; i < archives.length; i++) {
+                if (archives[i].id === id) { arc = archives[i]; break; }
+            }
+            if (!arc) { showToast('النسخة غير موجودة', 'error'); return; }
+            if (!confirm('هل أنت متأكد من استعادة البيانات من هذه النسخة؟\n\nهيتم استبدال كل البيانات الحالية.')) return;
+            inventory = JSON.parse(JSON.stringify(arc.inventory));
+            employees = JSON.parse(JSON.stringify(arc.employees));
+            transactions = JSON.parse(JSON.stringify(arc.transactions));
+            transactions.sort(function(a, b) { return b.timestamp - a.timestamp; });
+            saveToLocalStorage();
+            if (db && firebaseConnected) {
+                db.ref('inventory').set(inventory);
+                db.ref('employees').set(employees);
+                var transObj = {};
+                for (var i = 0; i < transactions.length; i++) {
+                    transObj['trans_' + transactions[i].timestamp + '_' + i] = transactions[i];
+                }
+                db.ref('transactions').set(transObj);
+            }
+            updateInventoryDisplay();
+            updateAdminStats();
+            updateSelects();
+            updateEmployeesList();
+            updateTransactionsList();
+            showToast('تم استعادة البيانات بنجاح');
+        }
+
+        function exportArchiveToExcel(id) {
+            var arc = null;
+            for (var i = 0; i < archives.length; i++) {
+                if (archives[i].id === id) { arc = archives[i]; break; }
+            }
+            if (!arc) { showToast('النسخة غير موجودة', 'error'); return; }
+            var wb = XLSX.utils.book_new();
+            var invData = [['الصنف', 'الكمية', 'الحالة']];
+            for (var name in arc.inventory) {
+                if (arc.inventory.hasOwnProperty(name)) {
+                    invData.push([name, arc.inventory[name], arc.inventory[name] < 5 ? 'منخفض' : 'متوفر']);
+                }
+            }
+            var ws1 = XLSX.utils.aoa_to_sheet(invData);
+            XLSX.utils.book_append_sheet(wb, ws1, 'المخزون');
+            var empData = [['الاسم', 'اسم المستخدم']];
+            for (var eid in arc.employees) {
+                if (arc.employees.hasOwnProperty(eid)) {
+                    empData.push([arc.employees[eid].name, arc.employees[eid].username]);
+                }
+            }
+            var ws2 = XLSX.utils.aoa_to_sheet(empData);
+            XLSX.utils.book_append_sheet(wb, ws2, 'الموظفين');
+            var transData = [['التاريخ', 'النوع', 'الصنف', 'الكمية', 'الموقع', 'الموظف', 'ملاحظات']];
+            for (var i = 0; i < arc.transactions.length; i++) {
+                var t = arc.transactions[i];
+                transData.push([new Date(t.timestamp).toLocaleString('ar-EG'), t.type === 'in' ? 'وارد' : 'صادر', t.item, t.qty, t.location || '', t.user, t.notes || '']);
+            }
+            var ws3 = XLSX.utils.aoa_to_sheet(transData);
+            XLSX.utils.book_append_sheet(wb, ws3, 'الحركات');
+            var fname = 'أرشيف_' + arc.name.replace(/\s+/g, '_') + '_' + new Date(arc.timestamp).toISOString().split('T')[0] + '.xlsx';
+            XLSX.writeFile(wb, fname);
+            showToast('تم تصدير الأرشيف');
+        }
+
+        function updateArchiveList() {
+            var list = document.getElementById('archiveList');
+            var html = '';
+            if (archives.length === 0) {
+                html = '<div class="empty-state"><p>لا توجد نسخ احتياطية</p><p style="font-size:12px;margin-top:5px;">انقر "إنشاء نسخة" لحفظ لقطة من البيانات</p></div>';
+            } else {
+                for (var i = 0; i < archives.length; i++) {
+                    var a = archives[i];
+                    var badgeClass = a.type === 'auto' ? 'auto' : (a.type === 'pre-reset' ? 'pre-reset' : 'manual');
+                    var badgeText = a.type === 'auto' ? 'تلقائي' : (a.type === 'pre-reset' ? 'قبل التصفير' : 'يدوي');
+                    html += '<div class="archive-card">' +
+                        '<div class="archive-header">' +
+                        '<div class="archive-name">' + a.name + '<span class="archive-badge ' + badgeClass + '">' + badgeText + '</span></div>' +
+                        '<div class="archive-date">' + a.dateStr + '</div>' +
+                        '</div>' +
+                        '<div class="archive-stats">' +
+                        '<div class="archive-stat">أصناف: <span>' + a.stats.items + '</span></div>' +
+                        '<div class="archive-stat">كمية: <span>' + a.stats.qty + '</span></div>' +
+                        '<div class="archive-stat">موظفين: <span>' + a.stats.employees + '</span></div>' +
+                        '<div class="archive-stat">حركات: <span>' + a.stats.transactions + '</span></div>' +
+                        '</div>' +
+                        '<div class="archive-actions">' +
+                        '<button class="btn btn-success btn-small btn-export-arc" data-id="' + a.id + '">تصدير Excel</button>' +
+                        '<button class="btn btn-info btn-small btn-restore-arc" data-id="' + a.id + '">استعادة</button>' +
+                        '<button class="btn btn-danger btn-small btn-delete-arc" data-id="' + a.id + '">حذف</button>' +
+                        '</div>' +
+                        '</div>';
+                }
+            }
+            list.innerHTML = html;
+        }
+
+        function showPreResetModal() {
+            document.getElementById('preResetModal').classList.add('active');
+        }
+
+        function closePreResetModal() {
+            document.getElementById('preResetModal').classList.remove('active');
+        }
+
+        function exportBeforeReset() {
+            createArchive('قبل التصفير - ' + new Date().toLocaleDateString('ar-EG'), 'pre-reset', 'نسخة تلقائية قبل تصفير البيانات');
+            var wb = XLSX.utils.book_new();
+            var invData = [['الصنف', 'الكمية', 'الحالة']];
+            for (var name in inventory) {
+                if (inventory.hasOwnProperty(name)) {
+                    invData.push([name, inventory[name], inventory[name] < 5 ? 'منخفض' : 'متوفر']);
+                }
+            }
+            var ws1 = XLSX.utils.aoa_to_sheet(invData);
+            XLSX.utils.book_append_sheet(wb, ws1, 'المخزون');
+            var empData = [['الاسم', 'اسم المستخدم']];
+            for (var eid in employees) {
+                if (employees.hasOwnProperty(eid)) {
+                    empData.push([employees[eid].name, employees[eid].username]);
+                }
+            }
+            var ws2 = XLSX.utils.aoa_to_sheet(empData);
+            XLSX.utils.book_append_sheet(wb, ws2, 'الموظفين');
+            var transData = [['التاريخ', 'النوع', 'الصنف', 'الكمية', 'الموقع', 'الموظف', 'ملاحظات']];
+            for (var i = 0; i < transactions.length; i++) {
+                var t = transactions[i];
+                transData.push([new Date(t.timestamp).toLocaleString('ar-EG'), t.type === 'in' ? 'وارد' : 'صادر', t.item, t.qty, t.location || '', t.user, t.notes || '']);
+            }
+            var ws3 = XLSX.utils.aoa_to_sheet(transData);
+            XLSX.utils.book_append_sheet(wb, ws3, 'الحركات');
+            XLSX.writeFile(wb, 'نسخة_قبل_التصفير_' + new Date().toISOString().split('T')[0] + '.xlsx');
+            showToast('تم تصدير النسخة وحفظها في الأرشيف');
+            closePreResetModal();
+            setTimeout(function() { doResetAll(); }, 500);
+        }
+
+        function skipExportAndReset() {
+            closePreResetModal();
+            doResetAll();
+        }
+
+        function doResetAll() {
+            if (!confirm('تحذير شديد! هل أنت متأكد من تصفير جميع البيانات؟\n\nهذا الإجراء سيحذف:\n- كل الأصناف\n- كل الموظفين\n- كل الحركات\n\nلا يمكن التراجع عن هذا الإجراء!')) return;
+            var confirmText = prompt('اكتب "نعم" لتأكيد التصفير:');
+            if (confirmText !== 'نعم') {
+                showToast('تم إلغاء التصفير', 'error');
+                return;
+            }
+            inventory = {};
+            employees = {};
+            transactions = [];
+            saveToLocalStorage();
+            if (db && firebaseConnected) {
+                db.ref('inventory').remove();
+                db.ref('employees').remove();
+                db.ref('transactions').remove();
+            }
+            updateInventoryDisplay();
+            updateAdminStats();
+            updateSelects();
+            updateEmployeesList();
+            updateTransactionsList();
+            showToast('تم تصفير جميع البيانات');
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -360,6 +635,12 @@
             document.getElementById('btnAdminLogin').addEventListener('click', showAdminLogin);
             document.getElementById('btnAdminSubmit').addEventListener('click', adminLogin);
             document.getElementById('btnAdminCancel').addEventListener('click', function() { closeModal('adminLoginModal'); });
+            document.getElementById('btnExportBeforeReset').addEventListener('click', exportBeforeReset);
+            document.getElementById('btnSkipExport').addEventListener('click', skipExportAndReset);
+            document.getElementById('btnCancelReset').addEventListener('click', closePreResetModal);
+            document.getElementById('preResetModal').addEventListener('click', function(e) {
+                if (e.target === this) closePreResetModal();
+            });
 
             var empTabs = document.querySelectorAll('[data-emptab]');
             for (var i = 0; i < empTabs.length; i++) {
@@ -402,7 +683,7 @@
             document.getElementById('btnAddEmployee').addEventListener('click', addEmployee);
             document.getElementById('btnSaveSheetsUrl').addEventListener('click', saveSheetsUrl);
             document.getElementById('btnSyncAll').addEventListener('click', syncAllToSheets);
-            document.getElementById('btnResetAll').addEventListener('click', resetAllData);
+            document.getElementById('btnResetAll').addEventListener('click', showPreResetModal);
             document.getElementById('btnExportInventory').addEventListener('click', exportInventoryReport);
             document.getElementById('btnExportIn').addEventListener('click', exportInReport);
             document.getElementById('btnExportOut').addEventListener('click', exportOutReport);
@@ -411,6 +692,22 @@
             document.getElementById('adminSearch').addEventListener('input', adminSearchItems);
             document.getElementById('adminLoginModal').addEventListener('click', function(e) {
                 if (e.target === this) closeModal('adminLoginModal');
+            });
+
+            document.getElementById('btnCreateManualBackup').addEventListener('click', function() {
+                var name = prompt('اسم النسخة الاحتياطية:', 'نسخة يدوية - ' + new Date().toLocaleDateString('ar-EG'));
+                if (name) {
+                    createArchive(name, 'manual', 'نسخة يدوية من المستخدم');
+                    showToast('تم إنشاء النسخة الاحتياطية');
+                }
+            });
+            document.getElementById('archiveList').addEventListener('click', function(e) {
+                var btn = e.target.closest('.btn-export-arc');
+                if (btn) exportArchiveToExcel(btn.getAttribute('data-id'));
+                btn = e.target.closest('.btn-restore-arc');
+                if (btn) restoreArchive(btn.getAttribute('data-id'));
+                btn = e.target.closest('.btn-delete-arc');
+                if (btn) deleteArchive(btn.getAttribute('data-id'));
             });
 
             document.getElementById('employeesList').addEventListener('click', function(e) {
@@ -451,6 +748,18 @@
                 updateTransactionsList();
                 updateAdminStats();
                 saveToLocalStorage();
+            });
+            db.ref('archives').on('value', function(snapshot) {
+                var val = snapshot.val() || {};
+                var fbArchives = [];
+                for (var key in val) {
+                    if (val.hasOwnProperty(key)) fbArchives.push(val[key]);
+                }
+                if (fbArchives.length > 0) {
+                    archives = fbArchives;
+                    archives.sort(function(a, b) { return b.timestamp - a.timestamp; });
+                    updateArchiveList();
+                }
             });
         }
 
@@ -531,7 +840,7 @@
                 var typeClass = t.type === 'in' ? 'in' : 'out';
                 var typeText = t.type === 'in' ? 'وارد' : 'صادر';
                 var icon = t.type === 'in' ? '⬇️' : '⬆️';
-                var notesHtml = t.notes ? '<div style="color:#888;margin-top:5px;font-size:12px;">📝 ' + t.notes + '</div>' : '';
+                var notesHtml = t.notes ? '<div style="color:#888888;margin-top:5px;font-size:12px;">📝 ' + t.notes + '</div>' : '';
                 var locationHtml = t.location ? '<div class="transaction-location">📍 ' + t.location + '</div>' : '';
                 html += '<div class="transaction-row ' + typeClass + '">' +
                     '<div class="trans-header">' +
@@ -569,26 +878,16 @@
                 if (callback) callback({status: 'error', message: 'No URL'});
                 return;
             }
-
-            // Ensure URL ends with /exec
             var url = sheetsUrl.trim();
             if (!url.endsWith('/exec')) {
-                if (url.endsWith('/')) {
-                    url = url + 'exec';
-                } else {
-                    url = url + '/exec';
-                }
+                if (url.endsWith('/')) { url = url + 'exec'; }
+                else { url = url + '/exec'; }
             }
-
             console.log('Sending to URL:', url);
             console.log('Data being sent:', JSON.stringify(data).substring(0, 200) + '...');
-
-            // Use fetch with no-cors mode as fallback
             fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
                 mode: 'cors',
                 redirect: 'follow'
@@ -611,22 +910,18 @@
             })
             .catch(function(error) {
                 console.error('Fetch error:', error);
-                // Try with no-cors mode as last resort
                 fetch(url, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                     mode: 'no-cors',
                     redirect: 'follow'
                 })
                 .then(function() {
-                    // no-cors returns opaque response, assume success
                     if (callback) callback({status: 'success', message: 'Data sent (opaque response)'});
                 })
                 .catch(function(err) {
-                    if (callback) callback({status: 'error', message: 'Network error: ' + error.message + '. Make sure the Apps Script is deployed as Web App with "Anyone" access.'});
+                    if (callback) callback({status: 'error', message: 'Network error: ' + error.message + '. Make sure the Apps Script is deployed as Web App with Anyone access.'});
                 });
             });
         }
@@ -640,14 +935,12 @@
             statusDiv.style.display = 'block';
             statusDiv.className = 'sync-status show connection-status';
             statusDiv.textContent = 'جاري التصدير...';
-
             var data = {
                 type: 'sync_all',
                 inventory: inventory,
                 employees: employees,
                 transactions: transactions
             };
-
             sendToSheets(data, function(resp) {
                 if (resp.status === 'success') {
                     statusDiv.className = 'sync-status show connection-status ok';
@@ -700,6 +993,7 @@
             document.getElementById('adminTab-inventory').classList.add('hidden');
             document.getElementById('adminTab-employees').classList.add('hidden');
             document.getElementById('adminTab-transactions').classList.add('hidden');
+            document.getElementById('adminTab-archive').classList.add('hidden');
             document.getElementById('adminTab-reports').classList.add('hidden');
             document.getElementById('adminTab-' + tab).classList.remove('hidden');
             if (tab === 'inventory') adminSearchItems();
@@ -708,7 +1002,8 @@
             if (tab === 'inventory') navItems[0].classList.add('active');
             if (tab === 'employees') navItems[1].classList.add('active');
             if (tab === 'transactions') navItems[2].classList.add('active');
-            if (tab === 'reports') navItems[3].classList.add('active');
+            if (tab === 'archive') navItems[3].classList.add('active');
+            if (tab === 'reports') navItems[4].classList.add('active');
         }
 
         function filterTransactions(type) {
@@ -794,7 +1089,6 @@
             var location = document.getElementById('newItemLocation').value.trim();
             if (!name) { showToast('أدخل اسم الصنف', 'error'); return; }
             if (inventory[name]) { showToast('الصنف موجود', 'error'); return; }
-
             var trans = { 
                 item: name, 
                 qty: qty, 
@@ -804,7 +1098,6 @@
                 notes: 'صنف جديد',
                 location: location || ''
             };
-
             if (db && firebaseConnected) {
                 db.ref('inventory/' + name).set(qty, function(error) {
                     if (!error) {
@@ -841,7 +1134,6 @@
             var location = document.getElementById('addLocation').value.trim();
             if (!name) { showToast('اختر صنف', 'error'); return; }
             var newQty = (inventory[name] || 0) + qty;
-
             var trans = { 
                 item: name, 
                 qty: qty, 
@@ -851,7 +1143,6 @@
                 notes: 'إضافة كمية',
                 location: location || ''
             };
-
             if (db && firebaseConnected) {
                 db.ref('inventory/' + name).set(newQty, function(error) {
                     if (!error) {
@@ -891,7 +1182,6 @@
             var currentQty = inventory[name] || 0;
             if (qty > currentQty) { showToast('الكمية أكبر من المخزون', 'error'); return; }
             var newQty = currentQty - qty;
-
             var trans = { 
                 item: name, 
                 qty: qty, 
@@ -901,7 +1191,6 @@
                 notes: notes || 'خروج صنف',
                 location: location || ''
             };
-
             function onComplete() {
                 if (db && firebaseConnected) {
                     db.ref('transactions').push(trans);
@@ -919,7 +1208,6 @@
                 document.getElementById('removeNotes').value = '';
                 showToast('تم الخروج');
             }
-
             if (db && firebaseConnected) {
                 if (newQty <= 0) {
                     db.ref('inventory/' + name).remove(function(error) { if (!error) onComplete(); });
@@ -943,12 +1231,10 @@
             var password = document.getElementById('empPassword').value;
             var debugDiv = document.getElementById('empDebug');
             var connDiv = document.getElementById('empConnStatus');
-
             if (!name || !username || !password) {
                 showToast('املأ جميع الحقول', 'error');
                 return;
             }
-
             var exists = false;
             for (var id in employees) {
                 if (employees.hasOwnProperty(id)) {
@@ -956,16 +1242,13 @@
                 }
             }
             if (exists) { showToast('اسم المستخدم موجود', 'error'); return; }
-
             var empData = { name: name, username: username, password: password };
             var id = 'emp_' + Date.now();
-
             debugDiv.style.display = 'block';
             debugDiv.textContent = 'جاري الإضافة...';
             connDiv.style.display = 'block';
             connDiv.className = 'connection-status';
             connDiv.textContent = 'جاري الاتصال...';
-
             if (db && firebaseConnected) {
                 db.ref('employees/' + id).set(empData, function(error) {
                     if (error) {
@@ -1045,33 +1328,6 @@
                 db.ref('transactions').set(obj);
             }
             showToast('تم الحذف');
-        }
-
-        function resetAllData() {
-            if (!confirm('تحذير شديد! هل أنت متأكد من تصفير جميع البيانات؟\n\nهذا الإجراء سيحذف:\n- كل الأصناف\n- كل الموظفين\n- كل الحركات\n\nلا يمكن التراجع عن هذا الإجراء!')) return;
-            var confirmText = prompt('اكتب \"نعم\" لتأكيد التصفير:');
-            if (confirmText !== 'نعم') {
-                showToast('تم إلغاء التصفير', 'error');
-                return;
-            }
-
-            inventory = {};
-            employees = {};
-            transactions = [];
-            saveToLocalStorage();
-
-            if (db && firebaseConnected) {
-                db.ref('inventory').remove();
-                db.ref('employees').remove();
-                db.ref('transactions').remove();
-            }
-
-            updateInventoryDisplay();
-            updateAdminStats();
-            updateSelects();
-            updateEmployeesList();
-            updateTransactionsList();
-            showToast('تم تصفير جميع البيانات');
         }
 
         function searchItems() { updateInventoryDisplay(); }
