@@ -286,7 +286,7 @@
         var employees = {};
         var transactions = [];
         var transactionFilter = 'all';
-        var sheetsUrl = localStorage.getItem('sheetsUrl') || '';
+        var sheetsUrl = 'https://script.google.com/macros/s/AKfycbxVEg73ocne-40ofl1LiT_zKMhb2WzQRadqtHQqicOV__SgXYqajVybkcA2w7WiMOhF/exec';
 
         function saveToLocalStorage() {
             localStorage.setItem('inventory', JSON.stringify(inventory));
@@ -316,7 +316,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            if (sheetsUrl) document.getElementById('sheetsUrl').value = sheetsUrl;
+            document.getElementById('sheetsUrl').value = sheetsUrl;
             setDefaultDates();
             attachAllEvents();
             loadFromLocalStorage();
@@ -663,7 +663,6 @@
 
         function saveSheetsUrl() {
             sheetsUrl = document.getElementById('sheetsUrl').value.trim();
-            localStorage.setItem('sheetsUrl', sheetsUrl);
             showToast('تم حفظ الرابط');
         }
 
