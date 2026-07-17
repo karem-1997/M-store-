@@ -48,7 +48,7 @@
         .item-qty { background: linear-gradient(135deg, #d4af37, #b8941f); color: #000; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; }
         .item-qty.low { background: linear-gradient(135deg, #ff4757, #cc0033); color: #fff; }
         .search-box { position: relative; margin-bottom: 15px; }
-        .search-box input { width: 100%; padding: 13px 16px 13px 45px; border: 1px solid rgba(212,175,55,0.2); border-radius: 12px; background: rgba(20,20,20,0.8); color: #f5f5f5; font-size: 14px; outline: none; }
+        .search-box input { width: 100%; padding: 13px 16px 13px 45px; border: 1px solid rgba(212,175,55,0.2); border-radius: 12px; background: #0a0a0a; color: #d4af37; font-size: 14px; outline: none; }
         .search-box::before { content: "🔍"; position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 16px; }
         .nav-bar { display: flex; justify-content: space-around; background: linear-gradient(180deg, #141414, #0a0a0a); padding: 10px 0; position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid rgba(212,175,55,0.15); z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.4); }
         .nav-item { text-align: center; color: #888888; font-size: 10px; cursor: pointer; padding: 5px 10px; transition: all 0.3s; border-radius: 8px; }
@@ -114,7 +114,11 @@
         .pre-reset-modal h3 { color: #f39c12; font-size: 18px; margin-bottom: 15px; }
         .pre-reset-modal p { color: #a0a0a0; font-size: 14px; margin-bottom: 20px; line-height: 1.8; }
         .pre-reset-actions { display: flex; flex-direction: column; gap: 10px; }
+        
+        input[type="date"] { background: #0a0a0a !important; color: #d4af37 !important; border: 1px solid rgba(212,175,55,0.3) !important; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(1) saturate(3) hue-rotate(10deg); cursor: pointer; }
         ::-webkit-scrollbar { width: 4px; }
+
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.3); border-radius: 4px; }
     </style>
@@ -303,9 +307,9 @@
                     <button class="btn btn-danger" id="btnResetAll">تصفير جميع البيانات</button>
                 </div>
                 <div class="card"><div class="card-title">تقرير المخزون الحالي</div><button class="btn btn-success" id="btnExportInventory">تحميل تقرير المخزون (Excel)</button></div>
-                <div class="card"><div class="card-title">تقرير الوارد</div><div class="date-range"><input type="date" id="inFromDate"><input type="date" id="inToDate"></div><button class="btn btn-info" id="btnExportIn">تحميل تقرير الوارد (Excel)</button></div>
-                <div class="card"><div class="card-title">تقرير الصادر</div><div class="date-range"><input type="date" id="outFromDate"><input type="date" id="outToDate"></div><button class="btn btn-danger" id="btnExportOut">تحميل تقرير الصادر (Excel)</button></div>
-                <div class="card"><div class="card-title">تقرير شامل</div><div class="date-range"><input type="date" id="fullFromDate"><input type="date" id="fullToDate"></div><button class="btn btn-primary" id="btnExportFull">تحميل التقرير الشامل (Excel)</button></div>
+                <div class="card"><div class="card-title">تقرير الوارد</div><div class="date-range"><input type="date" id="inFromDate" style="background:#0a0a0a;color:#d4af37;border:1px solid rgba(212,175,55,0.3);padding:11px;border-radius:10px;flex:1;"><input type="date" id="inToDate" style="background:#0a0a0a;color:#d4af37;border:1px solid rgba(212,175,55,0.3);padding:11px;border-radius:10px;flex:1;"></div><button class="btn btn-info" id="btnExportIn">تحميل تقرير الوارد (Excel)</button></div>
+                <div class="card"><div class="card-title">تقرير الصادر</div><div class="date-range"><input type="date" id="outFromDate" style="background:#0a0a0a;color:#d4af37;border:1px solid rgba(212,175,55,0.3);padding:11px;border-radius:10px;flex:1;"><input type="date" id="outToDate" style="background:#0a0a0a;color:#d4af37;border:1px solid rgba(212,175,55,0.3);padding:11px;border-radius:10px;flex:1;"></div><button class="btn btn-danger" id="btnExportOut">تحميل تقرير الصادر (Excel)</button></div>
+                <div class="card"><div class="card-title">تقرير شامل</div><div class="date-range"><input type="date" id="fullFromDate" style="background:#0a0a0a;color:#d4af37;border:1px solid rgba(212,175,55,0.3);padding:11px;border-radius:10px;flex:1;"><input type="date" id="fullToDate" style="background:#0a0a0a;color:#d4af37;border:1px solid rgba(212,175,55,0.3);padding:11px;border-radius:10px;flex:1;"></div><button class="btn btn-primary" id="btnExportFull">تحميل التقرير الشامل (Excel)</button></div>
             </div>
         </div>
         <div class="nav-bar">
